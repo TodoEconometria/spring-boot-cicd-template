@@ -14,7 +14,7 @@
 #    - GitHub CLI (gh) instalado y logueado (gh auth login)
 #    - Docker (opcional, para probar en local)
 #
-#  AUTOR: Jose Marco — https://github.com/TodoEconometria
+#  AUTOR: Juan Marcelo Gutierrez Miranda — https://github.com/TodoEconometria
 #  REPO:  https://github.com/TodoEconometria/spring-boot-cicd-template
 # ============================================================================
 
