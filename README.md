@@ -1,128 +1,105 @@
-# 🚀 Spring Boot CI/CD Template
+# Spring Boot CI/CD Template
 
-Script automatizado que configura un pipeline completo de **CI/CD** para cualquier proyecto **Spring Boot** con **PostgreSQL** y **Docker**.
+Script **interactivo** que configura un pipeline completo de CI/CD para cualquier proyecto Spring Boot con PostgreSQL y Docker.
 
-## ¿Qué hace?
+**No necesitas editar codigo** — solo ejecuta el script y responde las preguntas.
 
-Con un solo comando, tu proyecto tiene:
+## Que hace
 
-| Componente | Descripción |
-|-----------|-------------|
-| **GitHub Actions** | Pipeline que compila, testea y construye Docker en cada push |
-| **Docker Compose** | App + PostgreSQL + Adminer, todo con un `docker compose up` |
-| **Secretos seguros** | Contraseñas en `.env` (nunca en el código) |
-| **Docker Hub** | Push automático de la imagen (opcional) |
+Con un solo comando:
 
-## Uso rápido
+- **GitHub Actions** — Pipeline que compila, testea y construye Docker en cada push
+- **Docker Compose** — App + PostgreSQL + Adminer, todo con `docker compose up`
+- **Secretos seguros** — Passwords en `.env` local (nunca suben a git) y tokens cifrados en GitHub Secrets
+- **Docker Hub** — Push automatico de la imagen (opcional)
+
+## Uso rapido
 
 ### 1. Copia el script a tu proyecto
 
 ```bash
-# Desde la raíz de tu proyecto Spring Boot:
+cd tu-proyecto-spring-boot
 curl -O https://raw.githubusercontent.com/TodoEconometria/spring-boot-cicd-template/main/setup_cicd.sh
 chmod +x setup_cicd.sh
 ```
 
-### 2. Edita la configuración
-
-Abre `setup_cicd.sh` y cambia las variables al principio:
-
-```bash
-PROJECT_NAME="mi-proyecto"        # Nombre de tu proyecto
-GITHUB_USER="tu-usuario"          # Tu usuario de GitHub
-APP_PORT="8080"                   # Puerto de tu app
-DB_NAME="mibasededatos"           # Nombre de la BD
-DOCKERHUB_USER=""                 # Tu usuario de Docker Hub (opcional)
-JAVA_VERSION="17"                 # Versión de Java
-```
-
-### 3. Ejecuta
+### 2. Ejecuta y responde las preguntas
 
 ```bash
 ./setup_cicd.sh
 ```
 
-## Requisitos previos
+El script te pregunta:
+```
+  Nombre del proyecto [mi-proyecto]:
+  Tu usuario de GitHub [tu-usuario]:
+  Puerto de la app [8080]:
+  Version de Java [17]:
+  Nombre de la base de datos [mi-proyecto]:
+  Password de PostgreSQL [generada-aleatoriamente]:
+  Tu usuario de Docker Hub (vacio = saltar):
+```
+
+### 3. Listo
+
+El script hace todo automaticamente:
+- Crea `.env` con secretos (NO sube a git)
+- Genera `docker-compose.yml` sin passwords hardcodeadas
+- Crea el pipeline de GitHub Actions
+- Hace commit y push
+- Configura secrets en GitHub (cifrados)
+
+## Requisitos
 
 - **Git** instalado
-- **GitHub CLI** instalado y logueado (`gh auth login`)
-- Un **repositorio en GitHub** (el script lo crea si no existe)
-- **Docker** (opcional, solo para probar en local)
+- **GitHub CLI** (`gh`) instalado y logueado (`gh auth login`)
+- Un proyecto Spring Boot con `pom.xml` y `Dockerfile`
+- Docker (opcional, para probar en local)
 
-## ¿Qué genera?
+## Donde quedan los secretos
+
+| Secreto | Donde esta | Sube a GitHub? |
+|---------|-----------|----------------|
+| Password BD | `.env` en tu PC | NO (esta en .gitignore) |
+| Token Docker Hub | GitHub Secrets (cifrado) | NO (nadie lo ve) |
+| Password tests CI | Variable temporal en el pipeline | NO (se borra al terminar) |
+
+## Que genera
 
 ```
 tu-proyecto/
-├── .env                          # Secretos (NO se sube a git)
-├── .gitignore                    # Actualizado con .env
-├── docker-compose.yml            # App + PostgreSQL + Adminer
-├── Dockerfile                    # (ya existente en tu proyecto)
+├── .env                              <- Secretos (NO se sube)
+├── .gitignore                        <- Actualizado con .env
+├── docker-compose.yml                <- App + PostgreSQL + Adminer
 ├── src/main/resources/
-│   ├── application.properties         # (ya existente, perfil desarrollo)
-│   └── application-docker.properties  # NUEVO: perfil para contenedores
-└── .github/
-    └── workflows/
-        └── ci-cd.yml             # Pipeline completo
+│   ├── application.properties        <- (tu archivo original)
+│   └── application-ci.properties     <- NUEVO: perfil para CI
+└── .github/workflows/
+    └── ci-cd.yml                     <- Pipeline CI/CD
 ```
 
-## El pipeline en detalle
+## Pipeline
 
 ```
 Push a main/develop
-    │
-    ▼
-┌─────────────────────┐
-│  🔨 Build & Test    │  ← Compila con Maven
-│                     │  ← Ejecuta tests con PostgreSQL real
-│                     │  ← Sube reportes como artifact
-└────────┬────────────┘
-         │ (solo en main)
-         ▼
-┌─────────────────────┐
-│  🐳 Docker Build    │  ← Construye imagen multi-stage
-│                     │  ← Push a Docker Hub (si configurado)
-│                     │  ← Caché con GitHub Actions cache
-└─────────────────────┘
+       |
+       v
+ [Build & Test]     Compila + tests con PostgreSQL real
+       |
+       v (solo en main)
+ [Docker Build]     Construye imagen + push a Docker Hub
 ```
 
-## Docker Compose en local
+## Probar en local
 
 ```bash
-# Arrancar todo
-docker compose up -d
-
-# Ver logs
-docker compose logs -f app
-
-# Adminer (gestor visual de BD)
-open http://localhost:9090
-
-# Parar
-docker compose down
-
-# Parar y borrar datos de BD
-docker compose down -v
+docker compose up -d              # Arrancar
+docker compose logs -f app        # Ver logs
+curl http://localhost:8080/api/... # Probar API
+http://localhost:9090              # Adminer (ver BD)
+docker compose down -v            # Parar
 ```
-
-## Configurar Docker Hub (opcional)
-
-Si quieres que el pipeline suba la imagen automáticamente:
-
-```bash
-# 1. Crea un token en https://hub.docker.com/settings/security
-# 2. Configura los secrets en GitHub:
-gh secret set DOCKERHUB_USERNAME --repo tu-usuario/tu-proyecto
-gh secret set DOCKERHUB_TOKEN --repo tu-usuario/tu-proyecto
-```
-
-## Tecnologías
-
-- Java 17+ / Spring Boot
-- PostgreSQL 16
-- Docker & Docker Compose
-- GitHub Actions
-- Maven
 
 ## Licencia
 
-MIT — Úsalo libremente en tus proyectos.
+MIT
